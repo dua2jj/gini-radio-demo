@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gini · Radio — مكوّن الراديو</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   GINI · RADIO COMPONENT
+   Built on the design-system radio atom (28×28 round, gray ring
+   OFF, solid orange ON). All colors/spacing/type come from the
+   Gini skills (color-system · text-styles · adaptive-padding).
+   Light + Dark · RTL · responsive.
+   ============================================================ */
+
+/* ---------- Color tokens (gini-color-system) ---------- */
+:root{
+  --bg-app:#FBF9F8;--bg-page:#FBF9F8;--bg-surface:#FFFFFF;--bg-elevated:#FFFFFF;--bg-subtle:#FFF9F6;
+  --bg-control:#FFFFFF;--bg-control-hover:#FEF5F1;--bg-control-active:#FEF5F1;--bg-overlay:rgba(0,0,0,.56);
+  --bg-cta:#F05D25;--bg-cta-hover:#E54A19;--bg-cta-pressed:#F37D51;--bg-cta-soft:#FEF5F1;
+  --content-primary:#1D1D1D;--content-secondary:#525252;--content-tertiary:#A1A1A1;--content-disabled:#C9C9C9;
+  --content-cta:#F05D25;--content-on-cta:#FFFFFF;
+  --border-default:#E5E5E5;--border-soft:#F2F2F2;--border-strong:#D9D9D9;
+  --border-cta:#F05D25;--border-cta-soft:#FCDFD3;--border-focus:#F05D25;
+  --bg-error:#FEE8E9;--content-error:#F21D22;--border-error:#F21D22;
+
+  /* spacing (gini-adaptive-padding) */
+  --padding-xxs:8px;--padding-xs:12px;--padding-sm:16px;--padding-md:24px;--padding-lg:32px;--padding-xl:40px;
+  --padding-mobile-page:14px;--padding-mobile-md:12px;--padding-mobile-lg:16px;
+
+  /* radio sizing */
+  --radio-size:24px;
+
+  --font-primary:'Rubik','At Hauss Arabic','Expo Arabic',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+[data-theme="dark"]{
+  --bg-app:#0B0C0D;--bg-page:#101010;--bg-surface:#18191B;--bg-elevated:#1D1D1D;--bg-subtle:#141516;
+  --bg-control:#232427;--bg-control-hover:#2A2B2E;--bg-control-active:#2A140E;--bg-overlay:rgba(0,0,0,.72);
+  --bg-cta:#F05D25;--bg-cta-hover:#FF6433;--bg-cta-pressed:#C94318;--bg-cta-soft:#301307;
+  --content-primary:#FAFAFA;--content-secondary:#B8B8B8;--content-tertiary:#737373;--content-disabled:#595959;
+  --content-cta:#FF6433;--content-on-cta:#FFFFFF;
+  --border-default:#2A2B2E;--border-soft:#202124;--border-strong:#3A3B3F;
+  --border-cta:#F05D25;--border-cta-soft:#4A2012;--border-focus:#FF6433;
+  --bg-error:#610C0E;--content-error:#FB4949;--border-error:#FB4949;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg-page);
+  color:var(--content-primary);
+  font-family:var(--font-primary);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.4;
+}
+
+/* ============================================================
+   THE RADIO ATOM  (design-system: 28×28 → token 24px here)
+   OFF = gray ring on control bg.  ON = solid orange disc.
+   States derive from the native <input> so behaviour is real.
+   ============================================================ */
+.gn-input{
+  position:absolute; opacity:0; inline-size:0; block-size:0; margin:0; pointer-events:none;
+}
+.gn-radio{
+  box-sizing:border-box;
+  position:relative;
+  flex:0 0 auto;
+  inline-size:var(--radio-size);
+  block-size:var(--radio-size);
+  border-radius:50%;
+  background:var(--bg-control);
+  border:2px solid var(--border-default);   /* Figma node 1035:19452 — 2px Border/Natural-Primary #e5e5e5 */
+  display:inline-grid; place-items:center;
+  transition:border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+/* orange inner disc (Figma: #f05d25 fill, 2px gap inside the ring, NO checkmark) */
+.gn-radio::after{
+  content:""; position:absolute; inset:0; margin:auto;
+  inline-size:calc(var(--radio-size) - 8px);
+  block-size:calc(var(--radio-size) - 8px);
+  border-radius:50%;
+  background:var(--bg-cta);
+  transform:scale(0);
+  transition:transform .15s ease;
+}
+/* ON — reveal the orange disc (gray ring stays, exactly like Figma).
+   Works via input adjacency AND via the card/plan container (:has) when
+   the radio is not the input's immediate sibling. */
+.gn-input:checked + .gn-radio::after,
+.gn-card:has(.gn-input:checked) .gn-radio::after,
+.pcard:has(.gn-input:checked) .gn-radio::after{ transform:scale(1); }
+
+/* hover (enabled, unchecked) — orange ring tint */
+.gn-opt:hover .gn-input:not(:disabled):not(:checked) + .gn-radio,
+.gn-card:hover:not(:has(.gn-input:checked)) .gn-input:not(:disabled) ~ .gn-radio,
+.pcard:hover:not(:has(.gn-input:checked)) .gn-radio{
+  border-color:var(--bg-cta);
+}
+/* keyboard focus ring */
+.gn-input:focus-visible + .gn-radio{
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--border-focus) 30%, transparent);
+}
+/* error / invalid group — red ring, red disc when on */
+.is-error .gn-radio{ border-color:var(--border-error); }
+.is-error .gn-input:checked + .gn-radio::after{ background:var(--border-error); }
+/* disabled */
+.gn-input:disabled + .gn-radio{ background:var(--bg-subtle); border-color:var(--border-default); }
+.gn-input:disabled:checked + .gn-radio::after{ background:var(--content-disabled); }
+
+/* ============================================================
+   PAGE CHROME
+   ============================================================ */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between; gap:var(--padding-sm);
+  padding-inline:var(--padding-lg); padding-block:var(--padding-sm);
+  background:color-mix(in srgb, var(--bg-page) 88%, transparent);
+  backdrop-filter:saturate(180%) blur(12px);
+  border-bottom:1px solid var(--border-soft);
+}
+.topbar__brand{display:flex; align-items:center; gap:10px;}
+.topbar__dot{inline-size:26px; block-size:26px; border-radius:50%; background:var(--bg-cta);}
+.topbar__title{font-size:16px; font-weight:500;}
+.topbar__title small{display:block; font-size:12px; font-weight:400; color:var(--content-secondary);}
+.theme-btn{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:inherit; font-size:13px; font-weight:500; color:var(--content-primary);
+  background:var(--bg-control); border:1px solid var(--border-default);
+  padding:8px 14px; border-radius:999px; cursor:pointer;
+  transition:background-color .15s, border-color .15s;
+}
+.theme-btn:hover{background:var(--bg-control-hover); border-color:var(--border-strong);}
+
+.wrap{max-width:1040px; margin-inline:auto; padding-inline:var(--padding-lg); padding-block:var(--padding-xl);
+  display:flex; flex-direction:column; gap:var(--padding-md);}
+
+.lede h1{margin:0 0 8px; font-size:32px; font-weight:500; letter-spacing:-.01em;}
+.lede p{margin:0; font-size:16px; font-weight:400; color:var(--content-secondary); max-width:70ch;}
+
+/* Section card */
+.card{
+  background:var(--bg-surface);
+  border:1px solid var(--border-soft);
+  border-radius:20px;
+  padding:var(--padding-md);
+}
+.card__head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:18px;}
+.card__head h2{margin:0; font-size:22px; font-weight:500;}
+.card__head .tag{
+  font-size:11px; font-weight:500; color:var(--content-cta);
+  background:var(--bg-cta-soft); border:1px solid var(--border-cta-soft);
+  padding:4px 10px; border-radius:999px; white-space:nowrap;
+}
+.card__sub{margin:-10px 0 18px; font-size:13px; font-weight:400; color:var(--content-secondary);}
+
+/* ============================================================
+   VARIANT: BASE STATES — small swatch grid
+   ============================================================ */
+.states{display:flex; flex-wrap:wrap; gap:14px;}
+.swatch{
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+  min-width:118px; flex:1 1 118px;
+  padding:20px 12px 14px;
+  border:1px dashed var(--border-default); border-radius:16px;
+  background:var(--bg-subtle);
+}
+.swatch__label{font-size:13px; font-weight:500; color:var(--content-primary);}
+.swatch__code{font-size:11px; font-weight:400; color:var(--content-tertiary);}
+.gn-opt{display:inline-flex; align-items:center; cursor:pointer; margin:0;}
+.gn-opt.is-disabled{cursor:not-allowed;}
+
+/* ============================================================
+   VARIANT: DEFAULT (label + description, vertical group)
+   ============================================================ */
+.list{display:flex; flex-direction:column; gap:4px;}
+.opt-row{
+  display:flex; align-items:center; gap:12px;
+  padding:12px 8px; border-radius:12px; cursor:pointer; margin:0;
+  transition:background-color .15s;
+}
+.opt-row:hover{background:var(--bg-control-hover);}
+.opt-row__text{display:flex; flex-direction:column; gap:3px;}
+.opt-row__title{font-size:16px; font-weight:500; color:var(--content-primary); line-height:22.4px;}
+.opt-row__desc{font-size:13px; font-weight:400; color:var(--content-secondary); line-height:18.2px;}
+.opt-row:has(.gn-input:disabled){cursor:not-allowed;}
+.opt-row:has(.gn-input:disabled) .opt-row__title,
+.opt-row:has(.gn-input:disabled) .opt-row__desc{color:var(--content-disabled);}
+.opt-row:has(.gn-input:disabled):hover{background:transparent;}
+
+/* ============================================================
+   VARIANT: CARDS  ⭐ (the attached reference — car size picker)
+   radio at inline-start (right in RTL), text, price at inline-end
+   ============================================================ */
+.cards{display:flex; flex-direction:column; gap:12px;}
+.gn-card{
+  display:flex; align-items:center; gap:14px;
+  padding:16px 18px;
+  background:var(--bg-control);
+  border:1.5px solid var(--border-default);
+  border-radius:16px; cursor:pointer; margin:0;
+  transition:border-color .15s, background-color .15s, box-shadow .15s;
+}
+.gn-card:hover{border-color:var(--border-strong);}
+.gn-card:has(.gn-input:checked){
+  border-color:var(--border-cta);
+  background:var(--bg-control-active);
+}
+.gn-card:has(.gn-input:focus-visible){
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--border-focus) 22%, transparent);
+}
+.gn-card__text{display:flex; flex-direction:column; gap:4px; flex:1 1 auto; min-width:0;}
+.gn-card__title{font-size:16px; font-weight:500; color:var(--content-primary);}
+.gn-card__title .en{color:var(--content-secondary); font-weight:400;}
+.gn-card__desc{font-size:13px; font-weight:400; color:var(--content-secondary);}
+.gn-card__price{
+  flex:0 0 auto; font-size:16px; font-weight:500; color:var(--content-primary);
+  white-space:nowrap; font-feature-settings:"tnum";
+}
+.gn-card__price .cur{font-size:13px; font-weight:400; color:var(--content-secondary); margin-inline-start:2px;}
+.gn-card:has(.gn-input:checked) .gn-card__price{color:var(--content-cta);}
+
+/* ============================================================
+   VARIANT: SEGMENTED (connected, single-select)
+   ============================================================ */
+.segmented{
+  display:inline-flex; padding:4px; gap:4px;
+  background:var(--bg-subtle); border:1px solid var(--border-default);
+  border-radius:14px; max-width:100%; overflow:auto;
+}
+.seg{
+  position:relative; display:inline-flex; align-items:center; justify-content:center;
+  padding:9px 18px; border-radius:10px; cursor:pointer; margin:0;
+  font-size:14px; font-weight:500; color:var(--content-secondary); white-space:nowrap;
+  transition:background-color .15s, color .15s;
+}
+.seg:hover{color:var(--content-primary);}
+.seg:has(.gn-input:checked){background:var(--bg-cta); color:var(--content-on-cta);}
+.seg:has(.gn-input:focus-visible){box-shadow:0 0 0 3px color-mix(in srgb, var(--border-focus) 25%, transparent);}
+
+/* ============================================================
+   VARIANT: PILLS / FILTERS
+   ============================================================ */
+.pills{display:flex; flex-wrap:wrap; gap:10px;}
+.pill{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:9px 16px; border-radius:999px; cursor:pointer; margin:0;
+  font-size:14px; font-weight:500; color:var(--content-secondary);
+  background:var(--bg-control); border:1.5px solid var(--border-default);
+  transition:all .15s;
+}
+.pill:hover{border-color:var(--border-strong); color:var(--content-primary);}
+.pill:has(.gn-input:checked){
+  background:var(--bg-cta-soft); border-color:var(--border-cta); color:var(--content-cta);
+}
+.pill:has(.gn-input:focus-visible){box-shadow:0 0 0 3px color-mix(in srgb, var(--border-focus) 22%, transparent);}
+.pill__dot{inline-size:8px; block-size:8px; border-radius:50%; background:currentColor; opacity:.55;}
+.pill:has(.gn-input:checked) .pill__dot{opacity:1;}
+
+/* ============================================================
+   VARIANT: BUTTONS (toolbar, with icons)
+   ============================================================ */
+.btnrow{display:flex; flex-wrap:wrap; gap:12px;}
+.rbtn{
+  display:inline-flex; align-items:center; gap:10px;
+  padding:13px 18px; border-radius:14px; cursor:pointer; margin:0;
+  font-size:14px; font-weight:500; color:var(--content-primary);
+  background:var(--bg-control); border:1.5px solid var(--border-default);
+  transition:all .15s;
+}
+.rbtn:hover{border-color:var(--border-strong);}
+.rbtn svg{inline-size:20px; block-size:20px; flex:0 0 auto; color:var(--content-secondary); transition:color .15s;}
+.rbtn:has(.gn-input:checked){
+  background:var(--bg-cta); border-color:var(--bg-cta); color:var(--content-on-cta);
+}
+.rbtn:has(.gn-input:checked) svg{color:var(--content-on-cta);}
+.rbtn:has(.gn-input:focus-visible){box-shadow:0 0 0 3px color-mix(in srgb, var(--border-focus) 25%, transparent);}
+
+/* ============================================================
+   VARIANT: SIZES
+   ============================================================ */
+.sizes{display:flex; align-items:center; gap:28px; flex-wrap:wrap;}
+.size-cell{display:flex; flex-direction:column; align-items:center; gap:10px;}
+.size-cell span{font-size:12px; color:var(--content-secondary);}
+
+/* form controls inherit Gini font (Arial gotcha) */
+button,input,select,textarea{font-family:inherit;}
+
+/* ============================================================
+   ADDED USE-CASES & STATES
+   ============================================================ */
+
+/* read-only (locked value, not faded like disabled) — muted gray disc */
+.gn-radio.is-readonly::after{background:var(--content-secondary); transform:scale(1);}
+.gn-opt.is-readonly{cursor:default;}
+
+/* group divider heading */
+.group-head{display:flex; align-items:center; gap:14px; margin:18px 2px 2px;}
+.group-head h3{margin:0; font-size:14px; font-weight:500; letter-spacing:.02em; color:var(--content-cta); white-space:nowrap;}
+.group-head::after{content:""; flex:1 1 auto; height:1px; background:var(--border-soft);}
+
+/* ---- form field / fieldset + validation ---- */
+.field{border:0; margin:0; padding:0; min-inline-size:0;}
+.field__legend{padding:0; font-size:16px; font-weight:500; color:var(--content-primary); margin-bottom:4px;}
+.field__legend .req{color:var(--content-error); margin-inline-start:2px;}
+.field__help{margin:0 0 12px; font-size:13px; font-weight:400; color:var(--content-secondary); line-height:18.2px;}
+.field__error{display:none; align-items:center; gap:7px; margin:12px 0 0; font-size:13px; font-weight:400; color:var(--content-error); line-height:18.2px;}
+.field__error svg{inline-size:16px; block-size:16px; flex:0 0 auto;}
+.field.is-error .field__error{display:flex;}
+/* required/error row — exactly per Figma node 1092:9924 (red-tinted gradient + «مطلوب» badge + red radio) */
+.opt-row--required{background:linear-gradient(-89.45deg,#FEECED 0%,#FEF4F4 32%,#FFFFFF 100%); border-radius:24px; padding:12px 16px;}
+.opt-row--required:hover{background:linear-gradient(-89.45deg,#FEECED 0%,#FEF4F4 32%,#FFFFFF 100%);}
+.opt-row--required .opt-row__text{flex:1 1 0;}
+.req-badge{flex:0 0 auto; background:var(--bg-error); color:var(--content-error); font-size:14px; font-weight:500; line-height:1.2; padding:8px 13px; border-radius:48px; white-space:nowrap;}
+[data-theme="dark"] .opt-row--required,
+[data-theme="dark"] .opt-row--required:hover{background:linear-gradient(-89.45deg,#2A1416 0%,#241A1A 32%,var(--bg-surface) 100%);}
+
+/* ---- inline / horizontal group ---- */
+.inline-group{display:flex; flex-wrap:wrap; gap:10px 22px;}
+.opt-inline{display:inline-flex; align-items:center; gap:9px; cursor:pointer; margin:0; font-size:15px; font-weight:400; color:var(--content-secondary);}
+.opt-inline:has(.gn-input:checked){color:var(--content-primary); font-weight:500;}
+
+/* ---- horizontal cards row ---- */
+.cards--row{flex-direction:row;}
+.cards--row .gn-card{flex:1 1 0; align-items:center; gap:12px; border-radius:24px; position:relative; overflow:hidden;}
+/* ---- active state — exact from Figma node 1069:33452 (updated colors/stroke/radio) ---- */
+.cards--row .gn-card:has(.gn-input:checked){
+  border:1.5px solid transparent;
+  background:
+    linear-gradient(-89.85deg, #FFFFFF 0%, #FFF8F4 74%, #FFEEE5 100%) padding-box,
+    linear-gradient(48deg, #F05D25 0%, #FF9F6B 52%, #FFE0CE 100%) border-box;}
+[data-theme="dark"] .cards--row .gn-card:has(.gn-input:checked){
+  background:
+    linear-gradient(-89.85deg, var(--bg-control) 0%, #241F1B 74%, #2D2018 100%) padding-box,
+    linear-gradient(48deg, #F05D25 0%, #C97A48 58%, #5E3320 100%) border-box;}
+.cards--row .gn-card > *:not(.hcard__deco){position:relative; z-index:1;}
+.hcard__deco{position:absolute; inset:0; z-index:0; pointer-events:none; opacity:0; transition:opacity .3s ease;}
+.cards--row .gn-card:has(.gn-input:checked) .hcard__deco{opacity:1;}
+/* watermark = Figma "Delivery Clock Time" icon, WHITE fill (node 1079:18827) — subtle white-on-peach etch */
+.hcard__wm{position:absolute; left:-24px; top:-2px; inline-size:74px; block-size:74px; opacity:1; transform:rotate(30deg);}
+[data-theme="dark"] .hcard__wm{opacity:.09;}
+.hcard__spark{position:absolute; color:#F05D25;}
+.hcard__spark svg{display:block;}
+
+/* ===== Car-size selectable cards — 24px radius + Figma active (node 1083:6997) ===== */
+/* no watermark / no sparkles here — just gradient fill + gradient stroke */
+.cards--carsize .gn-card{border-radius:24px;}
+.cards--carsize .gn-card:has(.gn-input:checked){
+  border:1.5px solid transparent;
+  background:
+    linear-gradient(-89.5deg, #FFEEE5 0%, #FFF8F4 32%, #FFFFFF 100%) padding-box,
+    linear-gradient(-90deg, #F05D25 0%, #FFBF98 18%, #FFDDCE 48%, #FFF4ED 100%) border-box;}
+[data-theme="dark"] .cards--carsize .gn-card:has(.gn-input:checked){
+  background:
+    linear-gradient(-89.5deg, #2C1F17 0%, #241E1A 32%, var(--bg-control) 100%) padding-box,
+    linear-gradient(-90deg, #F05D25 0%, #B36A3E 40%, #3A2A20 100%) border-box;}
+
+/* ===== Add-on cards — 24px radius + Figma active (node 1086:9759) + new white icon box ===== */
+.cards--addon .gn-card{border-radius:24px;}
+.cards--addon .gn-card:has(.gn-input:checked){
+  border:1.5px solid transparent;
+  background:
+    linear-gradient(-89.5deg, #FFEEE5 0%, #FFF8F4 32%, #FFFFFF 100%) padding-box,
+    linear-gradient(-90deg, #F05D25 0%, #FFBF98 18%, #FFDDCE 48%, #FFF4ED 100%) border-box;}
+[data-theme="dark"] .cards--addon .gn-card:has(.gn-input:checked){
+  background:
+    linear-gradient(-89.5deg, #2C1F17 0%, #241E1A 32%, var(--bg-control) 100%) padding-box,
+    linear-gradient(-90deg, #F05D25 0%, #B36A3E 40%, #3A2A20 100%) border-box;}
+/* new icon container: solid white rounded box + bold filled icon (Figma 1086:9771/9772) */
+.cards--addon .gn-card__icon{inline-size:48px; block-size:48px; border-radius:16px;
+  background:#FFFFFF; border:1px solid #E5E5E5; box-shadow:none;
+  color:#F05D25; transition:color .18s ease;}   /* icon ALWAYS orange (selected or not) */
+.cards--addon .gn-card__icon svg{inline-size:28px; block-size:28px;}
+.cards--addon .gn-card__icon .acc{fill:#FDB022; transition:fill .18s ease;}   /* accent ALWAYS gold */
+/* keep the icon box WHITE + the icon ORANGE when selected (re-assert colour so it beats the
+   generic `.gn-card:has(:checked) .gn-card__icon{color:--content-on-cta}` white rule) */
+.cards--addon .gn-card:has(.gn-input:checked) .gn-card__icon{background:#FFFFFF; border-color:#EFD9CD; color:#F05D25;}
+[data-theme="dark"] .cards--addon .gn-card__icon{background:var(--bg-control); border-color:var(--border-default); color:#FF6E3C;}
+[data-theme="dark"] .cards--addon .gn-card:has(.gn-input:checked) .gn-card__icon{background:var(--bg-control); border-color:#4A2012; color:#FF6E3C;}
+
+/* ===== Payment-method cards — SAME add-on selection style, but no price:
+   the inline-end side carries the card STATE (selected · unselected · expired · suspended) ===== */
+.cards--pay .gn-card{border-radius:24px; gap:14px; position:relative;}
+/* SELECTED — identical peach fill + orange→fade gradient stroke as the add-on card */
+.cards--pay .gn-card:has(.gn-input:checked){
+  border:1.5px solid transparent;
+  background:
+    linear-gradient(-89.5deg, #FFEEE5 0%, #FFF8F4 32%, #FFFFFF 100%) padding-box,
+    linear-gradient(-90deg, #F05D25 0%, #FFBF98 18%, #FFDDCE 48%, #FFF4ED 100%) border-box;}
+[data-theme="dark"] .cards--pay .gn-card:has(.gn-input:checked){
+  background:
+    linear-gradient(-89.5deg, #2C1F17 0%, #241E1A 32%, var(--bg-control) 100%) padding-box,
+    linear-gradient(-90deg, #F05D25 0%, #B36A3E 40%, #3A2A20 100%) border-box;}
+
+/* card text: title + masked number line */
+.pay-title{font-size:16px; font-weight:500; color:var(--content-primary);}
+.pay-sub{font-size:13px; font-weight:400; color:var(--content-secondary); font-feature-settings:"tnum"; direction:rtl;}
+.pay-sub .num{color:var(--content-primary); font-weight:500; unicode-bidi:plaintext;}
+
+/* icon container — SAME white rounded box + two-tone icon as the add-on cards (icons swapped in) */
+.cards--pay .gn-card__icon{inline-size:48px; block-size:48px; border-radius:16px;
+  background:#FFFFFF; border:1px solid #E5E5E5; box-shadow:none;
+  color:#F05D25; transition:color .18s ease;}   /* icon ALWAYS orange (selected or not) */
+.cards--pay .gn-card__icon svg{inline-size:28px; block-size:28px;}
+.cards--pay .gn-card__icon .acc{fill:#FDB022; transition:fill .18s ease;}   /* accent ALWAYS gold */
+/* keep the icon box WHITE + the icon ORANGE when selected (beats the generic white-icon rule) */
+.cards--pay .gn-card:has(.gn-input:checked) .gn-card__icon{background:#FFFFFF; border-color:#EFD9CD; color:#F05D25;}
+[data-theme="dark"] .cards--pay .gn-card__icon{background:var(--bg-control); border-color:var(--border-default); color:#FF6E3C;}
+[data-theme="dark"] .cards--pay .gn-card:has(.gn-input:checked) .gn-card__icon{color:#FF6E3C;}
+[data-theme="dark"] .cards--pay .gn-card:has(.gn-input:checked) .gn-card__icon{background:var(--bg-control); border-color:#4A2012;}
+
+/* state chip on the inline-end side (shown for the expired card in place of the radio) */
+.pay-chip{
+  flex:0 0 auto; font-size:12px; font-weight:500; color:var(--content-secondary);
+  background:var(--bg-subtle); border:1px solid var(--border-default);
+  padding:6px 16px; border-radius:999px; white-space:nowrap; line-height:1.3;
+}
+.pay-chip--expired{color:#B4520E; background:#FFF1E6; border-color:#FBD9C2;}
+[data-theme="dark"] .pay-chip--expired{color:#FFB07A; background:#2A1710; border-color:#4A2A18;}
+
+/* EXPIRED — still readable, not selectable; badge desaturated, number dimmed */
+.cards--pay .gn-card.is-expired{cursor:default;}
+.cards--pay .gn-card.is-expired .pay-sub,
+.cards--pay .gn-card.is-expired .pay-sub .num{color:var(--content-tertiary);}
+.cards--pay .gn-card.is-expired:hover{border-color:var(--border-default);}
+
+.cards--pay .gn-card.is-expired .gn-card__icon{opacity:.85;}
+
+/* SUSPENDED / DISABLED — colors mirror the Figma "ادفع بالبطاقة" disabled card (Gini-revive 1:24898):
+   background = Background/Basic #FFFFFF  ·  card border = Border/Natural-Primary #E5E5E5
+   text (title+desc) = Content/Natural-Tertiary #A1A1A1  ·  icon-box border = Border/Natural-Secondary #F2F2F2
+   ·  icon = tertiary gray. All mapped to design-system tokens; theme-adaptive. */
+.cards--pay .gn-card.is-suspended{
+  background:var(--bg-control); border-color:var(--border-default);
+  cursor:not-allowed;
+}
+.cards--pay .gn-card.is-suspended:hover{border-color:var(--border-default);}
+.cards--pay .gn-card.is-suspended .pay-title,
+.cards--pay .gn-card.is-suspended .pay-sub,
+.cards--pay .gn-card.is-suspended .pay-sub .num{color:var(--content-tertiary);}
+.cards--pay .gn-card.is-suspended .gn-card__icon{
+  background:var(--bg-control); border-color:var(--border-soft); color:var(--content-tertiary);}
+.cards--pay .gn-card.is-suspended .gn-card__icon .acc{fill:var(--content-tertiary);}
+
+/* ============================================================
+   LANGUAGE OPTION — Figma "selectable group" (Gini-revive 1178:11540)
+   card: white · radius 16 · 1px border (#F2F2F2 default / #F05D25 selected) · pad 8 · gap 8
+   greeting box: radius 12 · pad 8 · bg #FAFAFA→#FAF5F3 · text 14 Medium #80746D→#F05D25
+   name: 12 · #80746D Regular → #463831 Medium · check badge: #F05D25 disc + 2px white ring, top-left
+   ============================================================ */
+.cards--lang{display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; justify-content:center;}
+.lang-card{
+  position:relative; box-sizing:border-box; margin:0;
+  flex:1 1 150px; min-width:140px; max-width:210px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  padding:8px;
+  background:var(--bg-control); border:1px solid var(--border-soft); border-radius:16px;
+  cursor:pointer; transition:border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+.lang-card__greet{
+  inline-size:100%; display:flex; align-items:center; justify-content:center;
+  padding:8px; border-radius:12px; background:#FAFAFA;
+  font-size:14px; font-weight:500; line-height:1.2; color:#80746D; text-align:center;
+  transition:background-color .15s ease, color .15s ease;
+}
+.lang-card__name{font-size:12px; font-weight:400; line-height:1.2; color:#80746D; text-align:center; transition:color .15s ease;}
+/* check badge (selected only) */
+.lang-card__check{
+  position:absolute; top:-5px; left:-3px; display:none;
+  align-items:center; justify-content:center; padding:2px 4px; border-radius:32px;
+  background:#F05D25; border:2px solid rgba(255,255,255,.9); color:#FFFFFF;
+}
+.lang-card__check svg{inline-size:14px; block-size:14px;}
+/* hover (unselected) */
+.lang-card:hover:not(:has(.gn-input:checked)){border-color:var(--border-strong);}
+.lang-card:has(.gn-input:focus-visible){box-shadow:0 0 0 3px color-mix(in srgb, var(--border-focus) 22%, transparent);}
+/* SELECTED */
+.lang-card:has(.gn-input:checked){border-color:#F05D25;}
+.lang-card:has(.gn-input:checked) .lang-card__greet{background:#FAF5F3; color:#F05D25;}
+.lang-card:has(.gn-input:checked) .lang-card__name{color:#463831; font-weight:500;}
+.lang-card:has(.gn-input:checked) .lang-card__check{display:flex;}
+/* dark theme — warm values remapped to dark tokens */
+[data-theme="dark"] .lang-card{background:var(--bg-control); border-color:var(--border-soft);}
+[data-theme="dark"] .lang-card__greet{background:var(--bg-subtle); color:var(--content-secondary);}
+[data-theme="dark"] .lang-card__name{color:var(--content-secondary);}
+[data-theme="dark"] .lang-card:has(.gn-input:checked){border-color:#F05D25;}
+[data-theme="dark"] .lang-card:has(.gn-input:checked) .lang-card__greet{background:#2C1F17; color:#FF6E3C;}
+[data-theme="dark"] .lang-card:has(.gn-input:checked) .lang-card__name{color:var(--content-primary);}
+
+/* ---- card icon ---- */
+.gn-card__icon{flex:0 0 auto; inline-size:42px; block-size:42px; border-radius:12px; display:grid; place-items:center; background:var(--bg-cta-soft); color:var(--content-cta); transition:all .15s;}
+.gn-card__icon svg{inline-size:22px; block-size:22px;}
+.gn-card:has(.gn-input:checked) .gn-card__icon{background:var(--bg-cta); color:var(--content-on-cta);}
+/* Figma colored icon (image): white badge container, larger, never recolored */
+.gn-card__icon:has(.gn-card__icon-img){inline-size:46px; block-size:46px; background:#FFFFFF; border:1px solid var(--border-default);}
+.gn-card:has(.gn-input:checked) .gn-card__icon:has(.gn-card__icon-img){background:#FFFFFF;}
+.gn-card__icon-img{inline-size:32px; block-size:32px; display:block;}
+
+/* ============================================================
+   GINI IDENTITY treatment (generic, no external shadow) —
+   warm palette + peach selected state + sparkle/light "bloom"
+   on select. Content (icon/text/value) stays flexible slots.
+   ============================================================ */
+.cards--gini{--gw-text:#463831; --gw-soft:#80746d; --gw-orange:#F05D25; --gw-peach:#FEF5F1; --gw-band:#FFF6F1;}
+[data-theme="dark"] .cards--gini{--gw-text:#F5EEE9; --gw-soft:#B6AAA1; --gw-orange:#FF6E3C; --gw-peach:#241611; --gw-band:#1E1512;}
+.cards--gini .gn-card{position:relative; overflow:hidden;}
+.cards--gini .gn-card > *:not(.gn-card__deco){position:relative; z-index:1;}
+.cards--gini .gn-card__title{color:var(--gw-text);}
+.cards--gini .gn-card__desc{color:var(--gw-soft);}
+.cards--gini .gn-card__price{color:var(--gw-text);}
+.cards--gini .gn-card__price .cur{color:var(--gw-soft);}
+/* icon badge: subtle inner top-gloss (no outer shadow) */
+.cards--gini .gn-card__icon{box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -2px 4px rgba(240,93,37,.05);}
+/* selected: warm peach gradient fill + orange edge */
+.cards--gini .gn-card:has(.gn-input:checked){border-color:var(--gw-orange);
+  background:linear-gradient(158deg, var(--gw-peach) 0%, var(--gw-band) 62%, var(--bg-control) 100%);}
+.cards--gini .gn-card:has(.gn-input:checked) .gn-card__price{color:var(--gw-orange);}
+/* the Gini "bloom": sparkles ✦ + light rays, revealed on select */
+.gn-card__deco{position:absolute; inset:0; z-index:0; pointer-events:none; opacity:0; transition:opacity .32s ease;}
+.cards--gini .gn-card:has(.gn-input:checked) .gn-card__deco{opacity:1;}
+.gn-card__deco .gc-spark{position:absolute; color:var(--gw-orange);}
+.gn-card__deco .gc-spark svg{display:block;}
+.gn-card__deco .gc-streak{position:absolute; border-radius:999px; transform:rotate(58deg);
+  background:linear-gradient(to bottom, rgba(255,255,255,.75), rgba(255,255,255,0));}
+[data-theme="dark"] .gn-card__deco .gc-streak{opacity:.3;}
+
+/* ---- add-on cards (square checkbox, multi-select) ---- */
+.gn-check{box-sizing:border-box; flex:0 0 auto; inline-size:24px; block-size:24px; border-radius:7px; background:var(--bg-control); border:1.5px solid var(--border-strong); display:inline-grid; place-items:center; transition:border-color .15s, background-color .15s, box-shadow .15s;}
+.gn-check svg{inline-size:15px; block-size:15px; color:var(--content-on-cta); opacity:0; transform:scale(.5); transition:opacity .15s, transform .15s;}
+.gn-input:checked + .gn-check{border-color:var(--bg-cta); background:var(--bg-cta);}
+.gn-input:checked + .gn-check svg{opacity:1; transform:scale(1);}
+.gn-card:hover .gn-input:not(:disabled):not(:checked) + .gn-check{border-color:var(--bg-cta); background:var(--bg-cta-soft);}
+.gn-input:focus-visible + .gn-check{box-shadow:0 0 0 3px color-mix(in srgb,var(--border-focus) 30%,transparent);}
+.gn-card__icon--outline{background:transparent; border:1.5px solid var(--border-default); color:var(--content-cta);}
+.gn-card:has(.gn-input:checked) .gn-card__icon--outline{background:var(--bg-cta-soft); border-color:var(--border-cta-soft); color:var(--content-cta);}
+.gn-card__price .plus{color:var(--content-secondary); margin-inline-end:1px;}
+
+/* ---- cards without indicator ---- */
+.gn-card--bare .gn-radio{display:none;}
+.gn-card__check{margin-inline-start:auto; color:var(--content-cta); opacity:0; transition:opacity .15s; flex:0 0 auto;}
+.gn-card__check svg{inline-size:22px; block-size:22px;}
+.gn-card--bare:has(.gn-input:checked) .gn-card__check{opacity:1;}
+
+/* ---- icon tiles grid ---- */
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;}
+.tile{display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; padding:18px 14px; border-radius:16px; cursor:pointer; margin:0; background:var(--bg-control); border:1.5px solid var(--border-default); transition:all .15s;}
+.tile:hover{border-color:var(--border-strong);}
+.tile:has(.gn-input:checked){border-color:var(--border-cta); background:var(--bg-control-active);}
+.tile:has(.gn-input:focus-visible){box-shadow:0 0 0 3px color-mix(in srgb,var(--border-focus) 22%,transparent);}
+.tile__icon{inline-size:30px; block-size:30px; color:var(--content-secondary); transition:color .15s;}
+.tile:has(.gn-input:checked) .tile__icon{color:var(--content-cta);}
+.tile__label{font-size:14px; font-weight:500;}
+.tile__meta{font-size:12px; color:var(--content-secondary);}
+
+/* ---- plan cards with badge ---- */
+/* ============================================================
+   PLAN CARDS — redesigned from Figma inspo (nodes 1057:6709 / 1057:13598)
+   Warm Gini plan palette · peach halo · price band · dotted-underline
+   features · sparkle header · annual toggle · glossy CTA.
+   ============================================================ */
+.plans-section{
+  --pk-text:#463831; --pk-soft:#80746d; --pk-orange:#F05D25; --pk-cta:#D7460F;
+  --pk-peach:#FEF5F1; --pk-band:#FFF6F1; --pk-halo:rgba(240,93,37,.15);
+  --pk-cardbg:#FFFFFF; --pk-border:#ECE0D9; --pk-line:rgba(240,93,37,.5);
+}
+[data-theme="dark"] .plans-section{
+  --pk-text:#F5EEE9; --pk-soft:#B6AAA1; --pk-orange:#FF6E3C; --pk-cta:#F05D25;
+  --pk-peach:#231610; --pk-band:#241611; --pk-halo:rgba(240,93,37,.28);
+  --pk-cardbg:#181310; --pk-border:#382B24; --pk-line:rgba(255,110,60,.5);
+}
+.plans-section{background:transparent; border:0; padding:0;}
+
+/* decorative sparkle header */
+.plans-hero{position:relative; overflow:hidden; text-align:center; border-radius:22px;
+  padding:26px 16px 22px; margin-bottom:22px; border:1px solid var(--pk-border);
+  background:linear-gradient(180deg, var(--pk-cardbg) 0%, var(--pk-peach) 135%);}
+.plans-hero__eyebrow{font-size:13px; color:var(--pk-text); font-weight:400; position:relative; z-index:1;}
+.plans-hero__eyebrow b{color:var(--pk-orange); font-weight:500;}
+.plans-hero__title{position:relative; z-index:1; display:flex; justify-content:center; align-items:center; gap:16px; margin:5px 0 0;
+  font-size:26px; font-weight:500; color:var(--pk-orange); letter-spacing:-.01em;}
+.plans-hero__title::before,.plans-hero__title::after{content:""; inline-size:58px; block-size:1.5px; border-radius:2px;
+  background:linear-gradient(90deg, transparent, var(--pk-line));}
+.plans-hero__title::after{background:linear-gradient(90deg, var(--pk-line), transparent);}
+.plans-hero .spark{position:absolute; color:var(--pk-orange); pointer-events:none; z-index:0;}
+.plans-hero .spark svg{display:block;}
+
+/* annual toggle */
+.plans-switch{position:relative; z-index:1; display:flex; justify-content:center; align-items:center; gap:10px; margin-top:16px;}
+.plans-switch__label{font-size:12.5px; font-weight:500; color:var(--pk-text);}
+.plans-switch__save{font-size:11px; font-weight:600; color:var(--pk-orange);
+  background:var(--pk-cardbg); border:1px solid rgba(240,93,37,.2); padding:3px 9px; border-radius:999px;}
+.plans-switch__btn{position:relative; inline-size:46px; block-size:26px; border-radius:999px; cursor:pointer;
+  border:1px solid #e8e8e8; background:var(--border-strong); transition:background .18s; padding:0; flex:0 0 auto;}
+.plans-switch__btn::after{content:""; position:absolute; top:2px; inset-inline-start:2px; inline-size:20px; block-size:20px;
+  border-radius:50%; background:#fff; box-shadow:0 6px 12px -3px rgba(0,0,0,.28); transition:inset-inline-start .18s;}
+.plans-switch__btn[aria-pressed="true"]{background:var(--pk-orange); border-color:var(--pk-orange);}
+.plans-switch__btn[aria-pressed="true"]::after{inset-inline-start:22px;}
+
+/* cards row */
+.plans-row{display:flex; gap:16px; align-items:stretch;}
+
+/* card = peach halo wrapper */
+.pcard{position:relative; flex:1 1 0; min-width:0; display:block; cursor:pointer; margin:0;
+  transition:transform .16s ease;}
+.pcard:hover{transform:translateY(-3px);}
+.pcard:has(.gn-input:focus-visible) .pcard__inner{box-shadow:0 0 0 3px color-mix(in srgb,var(--pk-orange) 22%,transparent);}
+/* glossy 3D premium badge (candy gradient + gloss + volume) — Figma node 1060:33316 */
+.pcard__badge{position:relative; display:inline-flex; align-items:center; isolation:isolate; flex:0 0 auto;
+  font-size:11px; font-weight:700; color:#fff; letter-spacing:.22px; white-space:nowrap;
+  padding:7px 15px 8px; border-radius:999px; border:1px solid transparent;
+  background:
+    linear-gradient(138deg, #FF6A1A 0%, #FF811E 40%, #FFB024 72%, #FFD84A 100%) padding-box,
+    linear-gradient(138deg, #FFC58F 0%, #FFE98E 100%) border-box;
+  box-shadow:
+    inset 0 1.5px 1px rgba(255,255,255,.8),
+    inset 0 -3px 5px -1px rgba(180,55,0,.5);
+  text-shadow:0 1px 1.5px rgba(150,45,0,.45);}
+.pcard__badge::before{content:""; position:absolute; z-index:-1; inset:2px 7px auto 7px; height:42%;
+  border-radius:999px; background:linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,0)); pointer-events:none;}
+.pcard__badge svg,.pcard__badge img{width:15px; height:15px; flex:0 0 auto; filter:drop-shadow(0 1px 1px rgba(150,45,0,.35));}
+/* dark mode only: deeper, non-glaring badge tones (light mode unchanged) */
+[data-theme="dark"] .pcard__badge{
+  background:
+    linear-gradient(138deg, #C74A12 0%, #D2591A 42%, #C97C22 72%, #C79233 100%) padding-box,
+    linear-gradient(138deg, #9C5A26 0%, #B9863C 100%) border-box;
+  box-shadow:
+    inset 0 1.5px 1px rgba(255,255,255,.26),
+    inset 0 -3px 5px -1px rgba(85,28,0,.5);
+  text-shadow:0 1px 1.5px rgba(55,18,0,.5);}
+[data-theme="dark"] .pcard__badge::before{background:linear-gradient(180deg, rgba(255,255,255,.3), rgba(255,255,255,0));}
+.pcard__inner{position:relative; background:var(--pk-cardbg); border:1px solid var(--pk-border);
+  border-radius:22px; padding:20px 16px 18px; display:flex; flex-direction:column; gap:15px; height:100%; box-sizing:border-box;}
+.pcard:has(.gn-input:checked) .pcard__inner{border-color:var(--pk-orange);}
+/* featured card — decorated with the Gini sparkle pattern (Figma node 1057:13598):
+   soft peach gradient + scattered orange sparkles, to distinguish the plan. */
+.pcard--featured .pcard__inner{
+  background:
+    radial-gradient(150% 80% at 50% -12%, rgba(240,93,37,.06) 0%, transparent 55%),
+    linear-gradient(180deg, var(--pk-peach) 0%, var(--pk-cardbg) 55%);
+  overflow:hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.5),
+    inset 0 26px 42px -30px rgba(240,93,37,.11);}
+[data-theme="dark"] .pcard--featured .pcard__inner{
+  background:
+    radial-gradient(150% 80% at 50% -12%, rgba(255,142,80,.10) 0%, transparent 58%),
+    linear-gradient(180deg, var(--pk-peach) 0%, var(--pk-cardbg) 55%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.09),
+    inset 0 28px 46px -30px rgba(255,125,65,.16);}
+.pcard--featured .pcard__inner > *:not(.pcard__deco){position:relative; z-index:1;}
+.pcard__deco{position:absolute; inset:0; z-index:0; pointer-events:none;}
+.pcard__deco .spark{position:absolute; color:var(--pk-orange);}
+.pcard__deco .spark svg{display:block;}
+/* light-beam streaks descending from the top (Figma nodes 1060:33323/33329/33331/33328) */
+.pcard__deco .streak{position:absolute; border-radius:999px; pointer-events:none; transform:rotate(60deg);
+  background:linear-gradient(to bottom, rgba(255,255,255,.7), rgba(255,255,255,0));}
+[data-theme="dark"] .pcard__deco .streak{opacity:.28;}
+/* featured: price row is flush (no box) — price on the right, badge hard-left */
+.pcard--featured .pcard__band{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:transparent; border-radius:0; box-shadow:none; margin-inline:-16px; padding:16px 10px;}
+.pcard--featured .pcard__price{flex:0 1 auto;}
+
+.pcard__head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+.pcard__head > span:first-child{flex:1 1 auto; min-width:0;}
+.pcard__radio{margin-top:2px; flex:0 0 auto;}
+.pcard__name{font-size:20px; font-weight:500; color:var(--pk-orange);}
+.pcard__tag{display:block; width:100%; font-size:12px; font-weight:400; color:var(--pk-soft); margin-top:3px;}
+
+/* non-featured price band — full-width horizontal peach→white gradient (Figma 1060:33121) */
+.pcard__band{margin-inline:-16px; padding:16px 14px; text-align:right;
+  background:linear-gradient(to right, #FFEEE5 0%, #FFFCFB 72%, #FFFFFF 100%);}
+[data-theme="dark"] .pcard__band{background:linear-gradient(to right, color-mix(in srgb, var(--pk-orange) 15%, var(--pk-cardbg)) 0%, var(--pk-cardbg) 72%);}
+/* plan-card radios use an orange ring (Figma 1060:33119) */
+.pcard:not(.pcard--featured) .gn-radio{border-color:var(--pk-orange);}
+.pcard__price{display:flex; align-items:baseline; justify-content:flex-start; gap:4px; color:var(--pk-text);}
+.pcard__price .num{font-size:27px; font-weight:500; letter-spacing:-.02em; font-feature-settings:"tnum";}
+.pcard__price .cur{font-size:14px; font-weight:400; color:var(--pk-soft);}
+.pcard__price .per{font-size:12px; font-weight:400; color:var(--pk-soft);}
+.pcard__was{display:none; font-size:12px; color:var(--pk-soft); text-decoration:line-through; margin-top:3px;}
+.plans-section.is-annual .pcard__was{display:block;}
+
+.pcard__feats{display:flex; flex-direction:column; gap:9px; margin-top:1px;}
+.pfeat{display:flex; align-items:center; justify-content:flex-start; gap:8px; font-size:12.5px; color:var(--pk-text);}
+.pfeat span{text-decoration:none;}
+.pfeat svg{inline-size:16px; block-size:16px; flex:0 0 auto; color:var(--pk-orange);}
+.pfeat--off{color:var(--pk-soft);}
+.pfeat--off span{text-decoration-color:color-mix(in srgb,var(--pk-soft) 30%,transparent);}
+.pfeat--off svg{color:var(--pk-soft); opacity:.7;}
+
+.plans-cta{position:relative; display:block; width:100%; margin-top:22px; border:0; cursor:pointer;
+  font-family:inherit; font-size:15px; font-weight:500; color:#fff; padding:15px; border-radius:16px;
+  background:var(--pk-cta); box-shadow:0 0 0 2px var(--pk-orange), inset 0 2px 22px rgba(255,255,255,.38);
+  transition:filter .15s;}
+.plans-cta:hover{filter:brightness(1.06);}
+.plans-cta:active{filter:brightness(.97);}
+
+/* ---- color swatches ---- */
+.swatches{display:flex; flex-wrap:wrap; gap:14px; align-items:center;}
+.swatch-color{position:relative; cursor:pointer; margin:0; display:inline-grid; place-items:center;}
+.swatch-color__dot{inline-size:34px; block-size:34px; border-radius:50%; border:1px solid color-mix(in srgb,var(--content-primary) 16%,transparent); display:grid; place-items:center; transition:box-shadow .15s, transform .15s;}
+.swatch-color:hover .swatch-color__dot{transform:scale(1.06);}
+.swatch-color__dot svg{inline-size:18px; block-size:18px; opacity:0; transition:opacity .15s;}
+.swatch-color:has(.gn-input:checked) .swatch-color__dot{box-shadow:0 0 0 2px var(--bg-surface),0 0 0 4px var(--border-cta);}
+.swatch-color:has(.gn-input:checked) .swatch-color__dot svg{opacity:1;}
+.swatch-color:has(.gn-input:focus-visible) .swatch-color__dot{box-shadow:0 0 0 2px var(--bg-surface),0 0 0 4px var(--border-focus);}
+
+/* ---- capacity grid ---- */
+.caps{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;}
+.cap{display:flex; flex-direction:column; align-items:center; gap:4px; padding:16px 12px; border-radius:14px; cursor:pointer; margin:0; background:var(--bg-control); border:1.5px solid var(--border-default); transition:all .15s; text-align:center;}
+.cap:hover{border-color:var(--border-strong);}
+.cap:has(.gn-input:checked){border-color:var(--border-cta); background:var(--bg-control-active);}
+.cap:has(.gn-input:focus-visible){box-shadow:0 0 0 3px color-mix(in srgb,var(--border-focus) 22%,transparent);}
+.cap__size{font-size:16px; font-weight:500;}
+.cap__meta{font-size:12px; color:var(--content-secondary);}
+.cap:has(.gn-input:checked) .cap__meta{color:var(--content-cta);}
+.cap:has(.gn-input:disabled){opacity:.45; cursor:not-allowed;}
+.cap:has(.gn-input:disabled):hover{border-color:var(--border-default);}
+
+/* ---- rating scale ---- */
+.scale{display:flex; flex-direction:column; gap:9px;}
+.scale__row{display:flex; gap:10px;}
+.scale__opt{flex:1 1 0; cursor:pointer; margin:0;}
+.scale__num{display:grid; place-items:center; block-size:48px; border-radius:12px; background:var(--bg-control); border:1.5px solid var(--border-default); font-size:16px; font-weight:500; color:var(--content-secondary); transition:all .15s;}
+.scale__opt:hover .scale__num{border-color:var(--border-strong); color:var(--content-primary);}
+.scale__opt:has(.gn-input:checked) .scale__num{background:var(--bg-cta); border-color:var(--bg-cta); color:var(--content-on-cta);}
+.scale__opt:has(.gn-input:focus-visible) .scale__num{box-shadow:0 0 0 3px color-mix(in srgb,var(--border-focus) 25%,transparent);}
+.scale__ends{display:flex; justify-content:space-between; font-size:12px; color:var(--content-tertiary);}
+
+/* ---- settings list (trailing radio, dividers) ---- */
+/* Settings list — exactly per Figma node 1089:9818 (container r24 + #e5e5e5, 1px pad, #f2f2f2 dividers) */
+.settings{border:1px solid var(--border-default); border-radius:24px; overflow:hidden; background:var(--bg-surface); padding:1px;}
+.set-row{display:flex; align-items:center; gap:12px; padding:14px 16px 15px; cursor:pointer; margin:0; border-bottom:1px solid var(--border-soft); transition:background-color .15s;}
+.set-row:last-child{border-bottom:0; padding:14px 16px;}
+.set-row:hover:not(:has(.gn-input:checked)){background:var(--bg-control-hover);}
+.set-row__text{display:flex; flex-direction:column; gap:2px; flex:1 1 auto;}
+.set-row__title{font-size:15px; font-weight:500; color:var(--content-primary); line-height:21px;}
+.set-row__desc{font-size:12px; color:var(--content-secondary); line-height:16.8px;}
+.set-row .gn-radio{margin-inline-start:auto;}
+/* selected row — peach gradient wash + GRADIENT underline #FFDDCE→#F05D25 (Figma node 1089:9827, real linear stroke) */
+.set-row:has(.gn-input:checked){background:linear-gradient(-89.45deg,#FFEEE5 0%,#FFF8F4 32%,#FFFFFF 100%); border-bottom:1px solid #F05D25; border-image:linear-gradient(90deg,#FFDDCE 0%,#F05D25 100%) 1;}
+[data-theme="dark"] .set-row:has(.gn-input:checked){background:linear-gradient(-89.45deg,#2C1F17 0%,#241E1A 32%,var(--bg-surface) 100%); border-bottom:1px solid #F05D25; border-image:linear-gradient(90deg,#4A2012 0%,#F05D25 100%) 1;}
+
+/* ---- segmented sizes / icon-only ---- */
+.segmented--sm .seg{padding:6px 12px; font-size:13px;}
+.seg svg{inline-size:18px; block-size:18px;}
+.seg-stack{display:flex; flex-direction:column; gap:14px; align-items:flex-start;}
+
+/* ---------- responsive ---------- */
+@media (max-width:640px){
+  .topbar{padding-inline:var(--padding-mobile-page); padding-block:10px;}
+  .wrap{padding-inline:var(--padding-mobile-page); padding-block:var(--padding-mobile-lg); gap:var(--padding-mobile-lg);}
+  .lede h1{font-size:26px;}
+  .lede p{font-size:14px;}
+  .card{padding:var(--padding-mobile-lg); border-radius:16px;}
+  .card__head h2{font-size:19px;}
+  .gn-card{padding:14px; gap:12px;}
+  .gn-card__title,.opt-row__title{font-size:15px;}
+  .topbar__title small{display:none;}
+  .cards--row{flex-direction:column;}
+  .plans-row{flex-direction:column;}
+  .plans-hero__title::before,.plans-hero__title::after{inline-size:32px;}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <span class="topbar__dot"></span>
+    <span class="topbar__title">Gini · Radio
+      <small>مكوّن الراديو — كل الحالات بأسلوب جني</small>
+    </span>
+  </div>
+  <button class="theme-btn" id="themeBtn" type="button">
+    <span id="themeIcon">🌙</span><span id="themeLabel">الوضع الداكن</span>
+  </button>
+</header>
+
+<main class="wrap">
+
+  <div class="lede">
+    <h1>مكوّن الراديو (Radio)</h1>
+    <p>راديو دائري مبني على ذرّة الدزاين سستم (حلقة رمادية للحالة غير المحدّدة، وتعبئة برتقالية مصمتة للمحدّدة). كل الحالات تستخدم توكنات جني للألوان والخط والمسافات، وتدعم الوضع الفاتح والداكن مع RTL.</p>
+  </div>
+
+  <!-- ============ BASE STATES ============ -->
+  <section class="card">
+    <div class="card__head"><h2>الحالات الأساسية</h2></div>
+    <p class="card__sub">الذرّة نفسها بكل حالات التفاعل — مشتقّة من حقل <code>input</code> أصلي فسلوكها حقيقي (نقر ولوحة مفاتيح).</p>
+    <div class="states">
+
+      <div class="swatch">
+        <label class="gn-opt"><input class="gn-input" type="radio" name="s-default"><span class="gn-radio"></span></label>
+        <span class="swatch__label">غير محدّد</span><span class="swatch__code">Unchecked</span>
+      </div>
+
+      <div class="swatch">
+        <label class="gn-opt"><input class="gn-input" type="radio" name="s-default" checked><span class="gn-radio"></span></label>
+        <span class="swatch__label">محدّد</span><span class="swatch__code">Checked</span>
+      </div>
+
+      <div class="swatch">
+        <label class="gn-opt"><input class="gn-input" type="radio" name="s-hover"><span class="gn-radio" style="border-color:var(--bg-cta);"></span></label>
+        <span class="swatch__label">تمرير</span><span class="swatch__code">Hover</span>
+      </div>
+
+      <div class="swatch">
+        <label class="gn-opt"><input class="gn-input" type="radio" name="s-focus" checked><span class="gn-radio" style="box-shadow:0 0 0 3px color-mix(in srgb,var(--border-focus) 30%,transparent);"></span></label>
+        <span class="swatch__label">تركيز</span><span class="swatch__code">Focus ring</span>
+      </div>
+
+      <div class="swatch is-error">
+        <label class="gn-opt"><input class="gn-input" type="radio" name="s-err"><span class="gn-radio"></span></label>
+        <span class="swatch__label">خطأ</span><span class="swatch__code">Invalid</span>
+      </div>
+
+      <div class="swatch">
+        <label class="gn-opt is-disabled"><input class="gn-input" type="radio" name="s-dis" disabled><span class="gn-radio"></span></label>
+        <span class="swatch__label">معطّل</span><span class="swatch__code">Disabled · off</span>
+      </div>
+
+      <div class="swatch">
+        <label class="gn-opt is-disabled"><input class="gn-input" type="radio" name="s-dis2" checked disabled><span class="gn-radio"></span></label>
+        <span class="swatch__label">معطّل ومحدّد</span><span class="swatch__code">Disabled · on</span>
+      </div>
+
+      <div class="swatch">
+        <label class="gn-opt is-readonly"><input class="gn-input" type="radio" name="s-ro" checked onclick="return false"><span class="gn-radio is-readonly"></span></label>
+        <span class="swatch__label">للقراءة فقط</span><span class="swatch__code">Read-only</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ DEFAULT (label + description) ============ -->
+  <section class="card">
+    <div class="card__head"><h2>افتراضي — عنوان ووصف</h2></div>
+    <p class="card__sub">المجموعة العمودية القياسية: راديو + عنوان + وصف اختياري. اختر خياراً واحداً.</p>
+    <div class="list">
+      <label class="opt-row">
+        <input class="gn-input" type="radio" name="notify" checked>
+        <span class="gn-radio"></span>
+        <span class="opt-row__text">
+          <span class="opt-row__title">كل الإشعارات</span>
+          <span class="opt-row__desc">استلم تنبيهات الحجز والعروض والتحديثات.</span>
+        </span>
+      </label>
+      <label class="opt-row">
+        <input class="gn-input" type="radio" name="notify">
+        <span class="gn-radio"></span>
+        <span class="opt-row__text">
+          <span class="opt-row__title">المهم فقط</span>
+          <span class="opt-row__desc">تأكيد الحجز وتغييرات الموعد فقط.</span>
+        </span>
+      </label>
+      <label class="opt-row">
+        <input class="gn-input" type="radio" name="notify" disabled>
+        <span class="gn-radio"></span>
+        <span class="opt-row__text">
+          <span class="opt-row__title">إيقاف الإشعارات</span>
+          <span class="opt-row__desc">غير متاح في خطتك الحالية.</span>
+        </span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ============ CARDS — ⭐ reference image ============ -->
+  <section class="card">
+    <div class="card__head">
+      <h2>بطاقات قابلة للاختيار</h2>
+      <span class="tag">★ الصورة المرفقة</span>
+    </div>
+    <p class="card__sub">اختيار حجم السيارة — راديو على اليمين، العنوان والوصف في المنتصف، والسعر على اليسار. البطاقة المحدّدة تأخذ إطاراً وخلفية برتقالية ناعمة.</p>
+    <div class="cards cards--carsize">
+
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="carsize" checked>
+        <span class="gn-radio"></span>
+        <span class="gn-card__text">
+          <span class="gn-card__title">صغيرة <span class="en">(Sedan)</span></span>
+          <span class="gn-card__desc">4–5 مقاعد (سيارة صالون).</span>
+        </span>
+        <span class="gn-card__price">15,000<span class="cur">د.ع</span></span>
+      </label>
+
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="carsize">
+        <span class="gn-radio"></span>
+        <span class="gn-card__text">
+          <span class="gn-card__title">متوسطة <span class="en">(SUV)</span></span>
+          <span class="gn-card__desc">5–7 مقاعد (مرتفعة/عائلية).</span>
+        </span>
+        <span class="gn-card__price">15,000<span class="cur">د.ع</span></span>
+      </label>
+
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="carsize">
+        <span class="gn-radio"></span>
+        <span class="gn-card__text">
+          <span class="gn-card__title">كبيرة <span class="en">(Pickup)</span></span>
+          <span class="gn-card__desc">7–8 او اكثر مقاعد أو بيك أب بحوض خلفي.</span>
+        </span>
+        <span class="gn-card__price">15,000<span class="cur">د.ع</span></span>
+      </label>
+
+    </div>
+  </section>
+
+  <!-- ============ SIZES ============ -->
+  <section class="card">
+    <div class="card__head"><h2>الأحجام</h2></div>
+    <p class="card__sub">الحجم الافتراضي 24px، ومتغيّر مصغّر 20px للقوائم الكثيفة.</p>
+    <div class="sizes">
+      <div class="size-cell">
+        <label class="gn-opt"><input class="gn-input" type="radio" name="sz" checked><span class="gn-radio" style="--radio-size:28px;"></span></label>
+        <span>كبير · 28px</span>
+      </div>
+      <div class="size-cell">
+        <label class="gn-opt"><input class="gn-input" type="radio" name="sz2" checked><span class="gn-radio"></span></label>
+        <span>افتراضي · 24px</span>
+      </div>
+      <div class="size-cell">
+        <label class="gn-opt"><input class="gn-input" type="radio" name="sz3" checked><span class="gn-radio" style="--radio-size:20px;"></span></label>
+        <span>مصغّر · 20px</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       ADDED USE-CASES & STATES
+       =================================================================== -->
+  <div class="group-head"><h3>أنماط واستخدامات إضافية</h3></div>
+
+  <!-- ============ FIELDSET + VALIDATION ============ -->
+  <section class="card">
+    <div class="card__head"><h2>حقل نموذج + تحقّق</h2></div>
+    <p class="card__sub">المجموعة داخل <code>fieldset</code> مع عنوان، علامة «مطلوب»، نص مساعدة، ورسالة خطأ عند التحقّق.</p>
+    <fieldset class="field is-error">
+      <p class="field__help">يحدّد صلاحيات المستخدم داخل المنصّة.</p>
+      <div class="list">
+        <label class="opt-row opt-row--required">
+          <input class="gn-input" type="radio" name="role">
+          <span class="gn-radio"></span>
+          <span class="opt-row__text">
+            <span class="opt-row__title">مدير</span>
+            <span class="opt-row__desc">صلاحية كاملة على كل الإعدادات والمستخدمين.</span>
+          </span>
+          <span class="req-badge">مطلوب</span>
+        </label>
+      </div>
+      <p class="field__error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5h.01"/></svg>
+        هذا الحقل مطلوب
+      </p>
+    </fieldset>
+  </section>
+
+  <!-- ============ INLINE / HORIZONTAL ============ -->
+  <section class="card">
+    <div class="card__head"><h2>أفقي (Inline)</h2></div>
+    <p class="card__sub">مجموعة بسيطة في صفّ واحد — للخيارات القصيرة جداً.</p>
+    <div class="inline-group">
+      <label class="opt-inline"><input class="gn-input" type="radio" name="gender" checked><span class="gn-radio"></span>ذكر</label>
+      <label class="opt-inline"><input class="gn-input" type="radio" name="gender"><span class="gn-radio"></span>أنثى</label>
+      <label class="opt-inline"><input class="gn-input" type="radio" name="gender"><span class="gn-radio"></span>أفضّل عدم الذكر</label>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS LIST (trailing radio) ============ -->
+  <section class="card">
+    <div class="card__head"><h2>قائمة إعدادات</h2></div>
+    <p class="card__sub">صفوف بفواصل والمؤشّر في الطرف الخلفي (نهاية السطر) — نمط شائع في الإعدادات.</p>
+    <div class="settings">
+      <label class="set-row">
+        <span class="set-row__text"><span class="set-row__title">الأحدث</span><span class="set-row__desc">آخر ما تمت إضافته أولاً.</span></span>
+        <input class="gn-input" type="radio" name="sort" checked><span class="gn-radio"></span>
+      </label>
+      <label class="set-row">
+        <span class="set-row__text"><span class="set-row__title">الأقل سعراً</span><span class="set-row__desc">من الأرخص إلى الأغلى.</span></span>
+        <input class="gn-input" type="radio" name="sort"><span class="gn-radio"></span>
+      </label>
+      <label class="set-row">
+        <span class="set-row__text"><span class="set-row__title">الأعلى تقييماً</span><span class="set-row__desc">حسب تقييمات المستخدمين.</span></span>
+        <input class="gn-input" type="radio" name="sort"><span class="gn-radio"></span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ============ HORIZONTAL CARDS ============ -->
+  <section class="card">
+    <div class="card__head"><h2>بطاقات أفقية</h2></div>
+    <p class="card__sub">بطاقات جنباً إلى جنب، تتحوّل إلى عمود على الشاشات الصغيرة.</p>
+    <div class="cards cards--row">
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="ship1" checked>
+        <span class="gn-radio"></span>
+        <span class="hcard__deco" aria-hidden="true">
+          <img class="hcard__wm" src="icons/wm-clock.svg" alt="">
+          <span class="hcard__spark" style="left:33px; top:22%;"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+          <span class="hcard__spark" style="left:13px; top:60%; opacity:.6;"><svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+        </span>
+        <span class="gn-card__text"><span class="gn-card__title">عادي</span><span class="gn-card__desc">4–7 أيام عمل.</span></span>
+      </label>
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="ship1">
+        <span class="gn-radio"></span>
+        <span class="hcard__deco" aria-hidden="true">
+          <img class="hcard__wm" src="icons/wm-clock.svg" alt="">
+          <span class="hcard__spark" style="left:33px; top:22%;"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+          <span class="hcard__spark" style="left:13px; top:60%; opacity:.6;"><svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+        </span>
+        <span class="gn-card__text"><span class="gn-card__title">سريع</span><span class="gn-card__desc">1–2 يوم عمل.</span></span>
+      </label>
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="ship1">
+        <span class="gn-radio"></span>
+        <span class="hcard__deco" aria-hidden="true">
+          <img class="hcard__wm" src="icons/wm-clock.svg" alt="">
+          <span class="hcard__spark" style="left:33px; top:22%;"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+          <span class="hcard__spark" style="left:13px; top:60%; opacity:.6;"><svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+        </span>
+        <span class="gn-card__text"><span class="gn-card__title">فوري</span><span class="gn-card__desc">خلال ساعات.</span></span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ============ ADD-ON CARDS (radio, single-select) ⭐ ============ -->
+  <section class="card">
+    <div class="card__head">
+      <h2>بطاقات إضافات</h2>
+      <span class="tag">★ الصورة المرفقة</span>
+    </div>
+    <p class="card__sub">بطاقة إضافة مع <b>راديو دائري</b> في الطرف — اختيار واحد، أيقونة مصمتة بصندوق أبيض والسعر بصيغة «+».</p>
+    <div class="cards cards--addon">
+
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="addon" checked>
+        <span class="gn-card__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle class="acc" cx="7.5" cy="5" r="1.05"/><circle class="acc" cx="12" cy="4.4" r="1.05"/><circle class="acc" cx="16.5" cy="5" r="1.05"/><rect x="7" y="6" width="1" height="3.4" rx=".4"/><rect x="11.5" y="5.4" width="1" height="4" rx=".4"/><rect x="16" y="6" width="1" height="3.4" rx=".4"/><rect x="4.5" y="10" width="15" height="9.2" rx="2"/><rect class="acc" x="3" y="19.5" width="18" height="1.9" rx=".95"/></svg></span>
+        <span class="gn-card__text">
+          <span class="gn-card__title">كيكة احتفال</span>
+          <span class="gn-card__desc">حسب الحجم والنكهة.</span>
+        </span>
+        <span class="gn-card__price"><span class="plus">+</span>40,000<span class="cur">د.ع</span></span>
+        <span class="gn-radio"></span>
+      </label>
+
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="addon">
+        <span class="gn-card__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.8" r="2.5"/><circle cx="17.2" cy="9.6" r="2.5"/><circle cx="15.2" cy="15.4" r="2.5"/><circle cx="8.8" cy="15.4" r="2.5"/><circle cx="6.8" cy="9.6" r="2.5"/><circle class="acc" cx="12" cy="10.9" r="2.6"/></svg></span>
+        <span class="gn-card__text">
+          <span class="gn-card__title">باقة ورد</span>
+          <span class="gn-card__desc">تُسلّم مع الكيكة.</span>
+        </span>
+        <span class="gn-card__price"><span class="plus">+</span>15,000<span class="cur">د.ع</span></span>
+        <span class="gn-radio"></span>
+      </label>
+
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="addon">
+        <span class="gn-card__icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4.5" y="11" width="15" height="10" rx="1.3"/><rect x="3.5" y="7" width="17" height="4" rx="1"/><rect class="acc" x="11" y="7" width="2" height="14"/><path class="acc" d="M12 7c-1.2 0-2.2-.5-2.7-1.4-.5-.9.1-2 1.1-2.1.9-.1 1.4.7 1.6 1.6.2-.9.7-1.7 1.6-1.6 1 .1 1.6 1.2 1.1 2.1C14.2 6.5 13.2 7 12 7z"/></svg></span>
+        <span class="gn-card__text">
+          <span class="gn-card__title">تغليف هدية</span>
+          <span class="gn-card__desc">كرتون فاخر مع شريط.</span>
+        </span>
+        <span class="gn-card__price"><span class="plus">+</span>5,000<span class="cur">د.ع</span></span>
+        <span class="gn-radio"></span>
+      </label>
+
+    </div>
+  </section>
+
+  <!-- ============ PAYMENT-METHOD CARDS (radio, single-select) — states on the inline-end side ============ -->
+  <section class="card">
+    <div class="card__head">
+      <h2>طرق الدفع المحفوظة</h2>
+      <span class="tag">★ حالات البطاقة</span>
+    </div>
+    <p class="card__sub">نفس ستايل بطاقة الإضافة تماماً — <b>راديو دائري</b> للاختيار، بلا سعر. جهة الطرف تحمل حالة البطاقة: <b>محدّدة</b> · غير محدّدة · <b>منتهية</b> · موقوفة.</p>
+    <div class="cards cards--pay">
+
+      <!-- 1) SELECTED -->
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="pay" checked>
+        <span class="gn-card__icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="5.2" width="19" height="13.6" rx="2.7"/><rect class="acc" x="2.5" y="8.6" width="19" height="2.9"/><rect class="acc" x="5.2" y="14.4" width="6.4" height="1.8" rx=".9"/><rect class="acc" x="13.6" y="14.4" width="5.2" height="1.8" rx=".9"/></svg></span>
+        <span class="gn-card__text">
+          <span class="pay-title">Master Card</span>
+          <span class="pay-sub">المنتهية بـ : <span class="num">4242</span></span>
+        </span>
+        <span class="gn-radio"></span>
+      </label>
+
+      <!-- 2) UNSELECTED -->
+      <label class="gn-card">
+        <input class="gn-input" type="radio" name="pay">
+        <span class="gn-card__icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="5.2" width="19" height="13.6" rx="2.7"/><rect class="acc" x="2.5" y="8.6" width="19" height="2.9"/><rect class="acc" x="5.2" y="14.4" width="6.4" height="1.8" rx=".9"/><rect class="acc" x="13.6" y="14.4" width="5.2" height="1.8" rx=".9"/></svg></span>
+        <span class="gn-card__text">
+          <span class="pay-title">Visa</span>
+          <span class="pay-sub">المنتهية بـ : <span class="num">1881</span></span>
+        </span>
+        <span class="gn-radio"></span>
+      </label>
+
+      <!-- 3) EXPIRED — no radio, «منتهية» chip instead -->
+      <label class="gn-card is-expired">
+        <input class="gn-input" type="radio" name="pay" disabled>
+        <span class="gn-card__icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="5.2" width="19" height="13.6" rx="2.7"/><rect class="acc" x="2.5" y="8.6" width="19" height="2.9"/><rect class="acc" x="5.2" y="14.4" width="6.4" height="1.8" rx=".9"/><rect class="acc" x="13.6" y="14.4" width="5.2" height="1.8" rx=".9"/></svg></span>
+        <span class="gn-card__text">
+          <span class="pay-title">بطاقة قديمة</span>
+          <span class="pay-sub">المنتهية بـ : <span class="num">0007</span></span>
+        </span>
+        <span class="pay-chip pay-chip--expired">منتهية</span>
+      </label>
+
+      <!-- 4) SUSPENDED / DISABLED -->
+      <label class="gn-card is-suspended">
+        <input class="gn-input" type="radio" name="pay" disabled>
+        <span class="gn-card__icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="5.2" width="19" height="13.6" rx="2.7"/><rect class="acc" x="2.5" y="8.6" width="19" height="2.9"/><rect class="acc" x="5.2" y="14.4" width="6.4" height="1.8" rx=".9"/><rect class="acc" x="13.6" y="14.4" width="5.2" height="1.8" rx=".9"/></svg></span>
+        <span class="gn-card__text">
+          <span class="pay-title">بطاقة موقوفة</span>
+          <span class="pay-sub">المنتهية بـ : <span class="num">9999</span></span>
+        </span>
+        <span class="gn-radio"></span>
+      </label>
+
+    </div>
+  </section>
+
+  <!-- ============ LANGUAGE OPTION — Figma "selectable group" (node 1178:11540) ============ -->
+  <section class="card">
+    <div class="card__head">
+      <h2>اختيار اللغة</h2>
+      <span class="tag">★ selectable group</span>
+    </div>
+    <p class="card__sub">مكوّن <b>ui/language-option</b> — فارينت «selectable group»: مجموعة كروت لغة، اختيار واحد، كل كارت يعرض كلمة ترحيب باللغة نفسها + اسمها، والمحدّد له ستروك برتقالي وشارة ✓ بالزاوية.</p>
+    <div class="cards--lang">
+
+      <label class="lang-card">
+        <input class="gn-input" type="radio" name="lang">
+        <span class="lang-card__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <span class="lang-card__greet" dir="auto">Merhaba</span>
+        <span class="lang-card__name" dir="auto">Turkish</span>
+      </label>
+
+      <label class="lang-card">
+        <input class="gn-input" type="radio" name="lang" checked>
+        <span class="lang-card__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <span class="lang-card__greet" dir="auto">سڵاو</span>
+        <span class="lang-card__name" dir="auto">Kurdish</span>
+      </label>
+
+      <label class="lang-card">
+        <input class="gn-input" type="radio" name="lang">
+        <span class="lang-card__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <span class="lang-card__greet" dir="auto">Hello</span>
+        <span class="lang-card__name" dir="auto">English</span>
+      </label>
+
+      <label class="lang-card">
+        <input class="gn-input" type="radio" name="lang">
+        <span class="lang-card__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <span class="lang-card__greet" dir="auto">مرحباً</span>
+        <span class="lang-card__name" dir="auto">Arabic</span>
+      </label>
+
+    </div>
+    <p class="card__sub" style="margin:16px 0 0;"><b>أماكن الاستخدام:</b> شاشة اختيار اللغة عند الإعداد الأولي (onboarding) · إعدادات ▸ اللغة · نافذة/بوتوم‑شيت تبديل اللغة · نموذج تفضيلات الحساب · أي اختيار مفرد ومرئي بين خيارات قليلة (٢–٦).</p>
+  </section>
+
+  <!-- ============ PLAN CARDS — redesigned from Figma inspo ============ -->
+  <section class="card plans-section">
+
+    <!-- plan cards (radio-select) -->
+    <div class="plans-row">
+
+      <label class="pcard">
+        <input class="gn-input" type="radio" name="plan">
+        <span class="pcard__inner">
+          <span class="pcard__head">
+            <span><span class="pcard__name">أساسي</span><span class="pcard__tag">الأساسيات لإدارة نشاطك التجاري</span></span>
+            <span class="pcard__radio"><span class="gn-radio"></span></span>
+          </span>
+          <span class="pcard__band">
+            <span class="pcard__price"><span class="num" data-monthly="100000">100,000</span><span class="cur">د.ع</span><span class="per">/شهر</span></span>
+            <span class="pcard__was" data-monthly="100000"></span>
+          </span>
+          <span class="pcard__feats">
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>إدارة المبيعات والفواتير</span></span>
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>إدارة المنتجات والمخزون</span></span>
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>بيانات العملاء الأساسية</span></span>
+            <span class="pfeat pfeat--off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg><span>تقارير أداء متقدّمة</span></span>
+          </span>
+        </span>
+      </label>
+
+      <label class="pcard pcard--featured">
+        <input class="gn-input" type="radio" name="plan" checked>
+        <span class="pcard__inner">
+          <span class="pcard__deco" aria-hidden="true">
+            <span class="streak" style="left:-34px; top:-36px; width:120px; height:7px; opacity:.5;"></span>
+            <span class="streak" style="left:205px; top:10px; width:168px; height:30px; opacity:.85;"></span>
+            <span class="streak" style="left:196px; top:28px; width:168px; height:9px;"></span>
+            <span class="spark" style="top:14px; left:16%; opacity:.7; transform:rotate(15deg);"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+            <span class="spark" style="top:40px; left:33%; opacity:.55; transform:rotate(-22deg);"><svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+            <span class="spark" style="top:22px; right:40%; opacity:.5; transform:rotate(28deg);"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+            <span class="spark" style="top:74px; left:11%; opacity:.5; transform:rotate(-14deg);"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+            <span class="spark" style="top:150px; right:12%; opacity:.4; transform:rotate(20deg);"><svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+            <span class="spark" style="top:200px; left:20%; opacity:.32; transform:rotate(8deg);"><svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 8.6 8.6 1.9-8.6 1.9L12 22.5l-1.9-8.6L1.5 12l8.6-1.9z"/></svg></span>
+          </span>
+          <span class="pcard__head">
+            <span><span class="pcard__name">احترافي</span><span class="pcard__tag">الأكثر شيوعاً للنشاطات النامية</span></span>
+            <span class="pcard__radio"><span class="gn-radio"></span></span>
+          </span>
+          <span class="pcard__band">
+            <span class="pcard__price"><span class="num" data-monthly="250000">250,000</span><span class="cur">د.ع</span><span class="per">/شهر</span></span>
+            <span class="pcard__badge">موصى به</span>
+          </span>
+          <span class="pcard__feats">
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>كل مزايا الأساسي</span></span>
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>تتبّع الطلبات حتى التسليم</span></span>
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>حملات تسويقية</span></span>
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>تقارير أداء متقدّمة</span></span>
+          </span>
+        </span>
+      </label>
+
+      <label class="pcard">
+        <input class="gn-input" type="radio" name="plan">
+        <span class="pcard__inner">
+          <span class="pcard__head">
+            <span><span class="pcard__name">متقدّم</span><span class="pcard__tag">لكل احتياجاتك المتقدّمة</span></span>
+            <span class="pcard__radio"><span class="gn-radio"></span></span>
+          </span>
+          <span class="pcard__band">
+            <span class="pcard__price"><span class="num" data-monthly="500000">500,000</span><span class="cur">د.ع</span><span class="per">/شهر</span></span>
+            <span class="pcard__was" data-monthly="500000"></span>
+          </span>
+          <span class="pcard__feats">
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>كل مزايا الاحترافي</span></span>
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>مدير حساب مخصّص</span></span>
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>دعم أولوية على مدار الساعة</span></span>
+            <span class="pfeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>تكامل مع أنظمتك عبر API</span></span>
+          </span>
+        </span>
+      </label>
+
+    </div>
+  </section>
+
+  <!-- ============ COLOR SWATCHES ============ -->
+  <section class="card">
+    <div class="card__head"><h2>منتقي الألوان</h2></div>
+    <p class="card__sub">راديو بصري لاختيار لون — المحدّد بحلقة برتقالية وعلامة صح.</p>
+    <div class="swatches">
+      <label class="swatch-color"><input class="gn-input" type="radio" name="color" checked><span class="swatch-color__dot" style="background:#F05D25;"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></label>
+      <label class="swatch-color"><input class="gn-input" type="radio" name="color"><span class="swatch-color__dot" style="background:#1EB97B;"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></label>
+      <label class="swatch-color"><input class="gn-input" type="radio" name="color"><span class="swatch-color__dot" style="background:#007CF8;"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></label>
+      <label class="swatch-color"><input class="gn-input" type="radio" name="color"><span class="swatch-color__dot" style="background:#FF247F;"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></label>
+      <label class="swatch-color"><input class="gn-input" type="radio" name="color"><span class="swatch-color__dot" style="background:#1D1D1D;"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></label>
+      <label class="swatch-color"><input class="gn-input" type="radio" name="color"><span class="swatch-color__dot" style="background:#F2A107;"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></label>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  const root = document.documentElement;
+  const btn = document.getElementById('themeBtn');
+  const icon = document.getElementById('themeIcon');
+  const label = document.getElementById('themeLabel');
+  btn.addEventListener('click', () => {
+    const dark = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', dark ? 'light' : 'dark');
+    icon.textContent = dark ? '🌙' : '☀️';
+    label.textContent = dark ? 'الوضع الداكن' : 'الوضع الفاتح';
+  });
+
+  // ---- Plan cards: annual toggle + CTA reflects selection ----
+  const plansSection = document.querySelector('.plans-section');
+  const annualBtn = document.getElementById('annualBtn');
+  const plansCta = document.getElementById('plansCta');
+  const fmt = n => n.toLocaleString('en-US');
+  function renderPrices(){
+    const annual = plansSection.classList.contains('is-annual');
+    plansSection.querySelectorAll('.pcard__price .num').forEach(el => {
+      const m = +el.dataset.monthly;
+      el.textContent = fmt(annual ? Math.round(m * 0.8) : m);
+    });
+    plansSection.querySelectorAll('.pcard__was').forEach(el => {
+      el.textContent = annual ? (fmt(+el.dataset.monthly) + ' د.ع') : '';
+    });
+  }
+  annualBtn?.addEventListener('click', () => {
+    const on = annualBtn.getAttribute('aria-pressed') === 'true';
+    annualBtn.setAttribute('aria-pressed', String(!on));
+    plansSection.classList.toggle('is-annual', !on);
+    renderPrices();
+  });
+  function syncCta(){
+    const sel = plansSection.querySelector('.pcard:has(.gn-input:checked) .pcard__name');
+    if (plansCta && sel) plansCta.textContent = 'اختر باقة ' + sel.textContent.trim();
+  }
+  plansSection.querySelectorAll('input[name="plan"]').forEach(r => r.addEventListener('change', syncCta));
+  renderPrices(); syncCta();
+</script>
+</body>
+</html>
